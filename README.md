@@ -2,10 +2,14 @@
 
 - **Frontend:** React + Vite
 - **Styling:** Tailwind CSS + custom CSS
-- **Backend:** Python / Flask
+- **Backend:** Python / Flask / gunicorn
 - **Database:** SQLite
 
 ---
+
+## For assignment submission
+
+- DB file and gunicorn config in /server
 
 ## Prerequisites
 
@@ -44,9 +48,8 @@ start.bat
 
 This opens two windows:
 
-
-Backend | http://localhost:3001 |
-Frontend | http://localhost:5173 |
+Backend | http://localhost:3001 
+Frontend | http://localhost:5173 
 
 ## Project Structure
 
