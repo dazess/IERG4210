@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, send_from_directory
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from database import init_db, close_db
 
@@ -20,6 +20,28 @@ app.register_blueprint(categories_bp)
 app.register_blueprint(products_bp)
 
 DIST_DIR = os.path.join(os.path.dirname(__file__), '..', 'dist')
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['Server'] = 'webserver'
+    response.headers.pop('X-Powered-By', None)
+    return response
+
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({'error': 'Bad request'}), 400
+
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory(DIST_DIR, 'index.html'), 200
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({'error': 'Method not allowed'}), 405
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/uploads/<path:filename>')
 def serve_upload(filename):
