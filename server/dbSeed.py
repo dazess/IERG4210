@@ -13,14 +13,14 @@ try:
         db.execute("DELETE FROM sqlite_sequence WHERE name IN ('products', 'categories')")
 
         cats = {}
-        for name in ('Sports', 'Muscle Car', 'Motorcycle'):
+        for name in ('Sports Car', 'Muscle Car', 'Motorcycle'):
             cur = db.execute('INSERT INTO categories (name) VALUES (?)', (name,))
             cats[name] = cur.lastrowid
 
         products = [
-            (cats['Sports'],     'PFISTER 811',                 1135220, 'High-performance supercar from Pfister.'),
-            (cats['Sports'],     'Ocelot Pariah',               2100220, 'The fastest sports car at Legendary.'),
-            (cats['Sports'],     'Grotti Itali GTO Stinger TT', 2380220, 'Italian luxury sports car — runs very fast.'),
+            (cats['Sports Car'],     'PFISTER 811',                 1135220, 'High-performance supercar from Pfister.'),
+            (cats['Sports Car'],     'Ocelot Pariah',               2100220, 'The fastest sports car at Legendary.'),
+            (cats['Sports Car'],     'Grotti Itali GTO Stinger TT', 2380220, 'Italian luxury sports car — runs very fast.'),
             (cats['Muscle Car'], 'KARIN 190Z',                  1900220, 'Classic Japanese-inspired muscle car.'),
             (cats['Muscle Car'], 'Deviant',                      512000, 'Raw American muscle, aggressive styling.'),
             (cats['Motorcycle'], 'Shitzu Hakuchou Drag',        1900220, 'High-performance motorcycle, sleek design.'),
