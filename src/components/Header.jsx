@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ShoppingCart from './ShoppingCart';
+
 export default function Header() {
+  const [cartOpen, setCartOpen] = useState(false);
+
   return (
     <header className="header">
       <nav className="navbar ">
         <a href="/" className="logo">Legendary MOTORSPORT</a>
         <div className="cart-wrapper">
-          <input type="checkbox" id="cart-toggle" className="cart-toggle-checkbox" />
-          <label htmlFor="cart-toggle" className="cart-button">
+          <button className="cart-button" onClick={() => setCartOpen(open => !open)}>
             Shopping Cart
-          </label>
-          <ShoppingCart/>
+          </button>
+          <button className="admin-button" onClick={() => window.location.href = '/admin'}>
+            Admin
+          </button>
+          <ShoppingCart isOpen={cartOpen} />
         </div>
       </nav>
     </header>

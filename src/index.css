@@ -56,6 +56,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  input, textarea, select {
+    color: #555;
+  }
+  input[type="file"] {
+    color: white;
+  }
 }
 
 

@@ -53,12 +53,10 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 /* Shopping Cart Styles */
-.cart-toggle-checkbox {
-  display: none;
-}
 
 .cart-wrapper .shopping-cart {
   position: fixed;
@@ -73,15 +71,6 @@
   transition: right 0.3s ease;
 }
 
-
-.cart-toggle-checkbox:checked ~ .shopping-cart {
-  right: 0;
-}
-
-
-.cart-wrapper:hover .shopping-cart {
-  right: 0;
-}
 
 .cart-content {
   padding: 20px;
@@ -118,6 +107,7 @@
 .item-name {
   font-weight: bold;
   color: #333;
+  flex: 1;
 }
 
 .item-qty {
@@ -128,6 +118,45 @@
 .item-price {
   color: #007bff;
   font-weight: bold;
+  min-width: 80px;
+  text-align: right;
+}
+
+.item-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  background-color: #555;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background-color: #333;
+}
+
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.qty-input {
+  width: 48px;
+  padding: 3px 4px;
+  text-align: center;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .item-info h4 {
