@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { CartContext } from '../App';
 
-const API = 'http://localhost:3001';
+const API = '';
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();

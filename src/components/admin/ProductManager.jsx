@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const API  = 'http://localhost:3001';
+const API  = '';
 const EMPTY = { catid: '', name: '', price: '', description: '' };
 
 export default function ProductManager() {

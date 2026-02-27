@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CartContext } from '../App';
 
-const API = 'http://localhost:3001';
+const API = '';
 
 export default function ProductPage() {
   const { pid } = useParams();

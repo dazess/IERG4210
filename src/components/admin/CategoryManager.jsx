@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const API = 'http://localhost:3001';
+const API = '';
 
 export default function CategoryManager() {
   const [categories, setCategories] = useState([]);

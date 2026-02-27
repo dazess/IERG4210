@@ -10,7 +10,7 @@ import '../styles/main.css';
 
 export const CartContext = createContext(null);
 
-const API = 'http://localhost:3001';
+const API = '';
 
 function App() {
   const [cart, setCart] = useState(() => {
