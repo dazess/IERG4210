@@ -59,4 +59,6 @@ def serve_frontend(path):
 if __name__ == '__main__':
     with app.app_context():
         init_db()
-    app.run(host='0.0.0.0', port=80, debug=False)
+    port = int(os.environ.get('FLASK_PORT', 3001))
+    debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+    app.run(host='0.0.0.0', port=port, debug=debug)
