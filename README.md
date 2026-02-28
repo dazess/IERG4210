@@ -26,7 +26,7 @@
 npm install
 ```
 
-### 2. Python virtual environment
+### 2. Python virtual environment (Windows)
 
 ```bash
 cd server
@@ -34,6 +34,14 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 cd ..
+```
+Copy .env.example to .env and edit as needed
+
+### 3. Seeding the database (Optional)
+
+```bash
+cd server
+python dbSeed.py
 ```
 
 ---
