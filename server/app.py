@@ -7,6 +7,7 @@ from flask_cors import CORS
 from database import init_db, close_db
 
 app = Flask(__name__)
+app.debug = False  # Never expose tracebacks to users; dev mode uses app.run() debug flag
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 app.secret_key = os.environ.get('SECRET_KEY')

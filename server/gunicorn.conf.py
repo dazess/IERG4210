@@ -1,4 +1,4 @@
-bind = "0.0.0.0:80"
+bind = "unix:app.sock"
 workers = 2
 worker_class = "sync"
 timeout = 30
