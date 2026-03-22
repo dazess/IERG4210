@@ -37,7 +37,7 @@ cd ..
 ```
 Copy .env.example to .env and edit as needed
 
-### 3. Seeding the database (Optional)
+### 3. Seeding the database 
 
 ```bash
 cd server
@@ -61,7 +61,7 @@ Frontend | http://localhost:5173
 
 ## Authentication
 
-The app now includes registration/login and role-based admin access.
+Admin/Auth access
 
 - `GET /api/auth/me`: returns current authentication state
 - `POST /api/auth/login`: login with email/password
@@ -73,7 +73,7 @@ The app now includes registration/login and role-based admin access.
 
 ### Default seeded accounts
 
-If these users do not already exist, they are created automatically during DB init:
+If these users do not already exist, they are created automatically during DB seed:
 
 - Admin: `admin@example.com` / `AdminPass!123`
 - Normal user: `user@example.com` / `UserPass!123`
