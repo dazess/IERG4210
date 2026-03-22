@@ -76,8 +76,29 @@
   padding: 20px;
 }
 
-.cart-content h2 {
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+}
+
+.cart-close-btn {
+  border: none;
+  background: transparent;
+  color: #333;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.cart-close-btn:hover {
+  color: #000;
+}
+
+.cart-content h2 {
+  margin-bottom: 0;
   color: #333;
 }
 

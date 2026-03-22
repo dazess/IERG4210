@@ -10,7 +10,7 @@ try:
     with db:
         db.execute('DELETE FROM products')
         db.execute('DELETE FROM categories')
-        db.execute("DELETE FROM sqlite_sequence WHERE name IN ('products', 'categories')")
+        db.execute('DELETE FROM sqlite_sequence WHERE name IN (?, ?)', ('products', 'categories'))
 
         cats = {}
         for name in ('Sports Car', 'Muscle Car', 'Motorcycle'):

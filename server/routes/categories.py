@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from database import get_db
 from sqlite3 import IntegrityError
+from auth_utils import admin_required
+from utils import validate_category_name
 
 bp = Blueprint('categories', __name__, url_prefix='/api/categories')
 
@@ -13,11 +15,12 @@ def list_categories():
 
 
 @bp.route('', methods=['POST'])
+@admin_required
 def create_category():
     data = request.get_json(silent=True) or {}
-    name = (data.get('name') or '').strip()[:255]
-    if not name:
-        return jsonify({'error': 'Category name is required'}), 400
+    name, err = validate_category_name(data.get('name'))
+    if err:
+        return jsonify({'error': err}), 400
     try:
         db = get_db()
         cur = db.execute('INSERT INTO categories (name) VALUES (?)', (name,))
@@ -28,20 +31,25 @@ def create_category():
 
 
 @bp.route('/<int:catid>', methods=['PUT'])
+@admin_required
 def update_category(catid):
     data = request.get_json(silent=True) or {}
-    name = (data.get('name') or '').strip()[:255]
-    if not name:
-        return jsonify({'error': 'Category name is required'}), 400
-    db = get_db()
-    cur = db.execute('UPDATE categories SET name = ? WHERE catid = ?', (name, catid))
-    db.commit()
-    if cur.rowcount == 0:
-        return jsonify({'error': 'Category not found'}), 404
-    return jsonify({'catid': catid, 'name': name})
+    name, err = validate_category_name(data.get('name'))
+    if err:
+        return jsonify({'error': err}), 400
+    try:
+        db = get_db()
+        cur = db.execute('UPDATE categories SET name = ? WHERE catid = ?', (name, catid))
+        db.commit()
+        if cur.rowcount == 0:
+            return jsonify({'error': 'Category not found'}), 404
+        return jsonify({'catid': catid, 'name': name})
+    except IntegrityError:
+        return jsonify({'error': 'Category name already exists'}), 409
 
 
 @bp.route('/<int:catid>', methods=['DELETE'])
+@admin_required
 def delete_category(catid):
     try:
         db = get_db()

@@ -1,4 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  normalizeMoneyInput,
+  sanitizeDescriptionInput,
+  sanitizeSingleLineInput,
+  sanitizeDisplayText,
+  sanitizeImageIdForPath,
+} from '../../lib/validation';
+import useCsrfToken from '../../hooks/use-csrf-token';
 
 const API  = '';
 const EMPTY = { catid: '', name: '', price: '', description: '' };
@@ -10,6 +18,17 @@ export default function ProductManager() {
   const [editId,     setEditId]     = useState(null);
   const [errors,     setErrors]     = useState([]);
   const fileRef = useRef();
+  const { csrfToken, csrfError } = useCsrfToken();
+
+  const isAllowedImageType = (file) => {
+    if (!file) return true;
+    return ['image/jpeg', 'image/png', 'image/gif'].includes(file.type);
+  };
+
+  const isAllowedImageSize = (file) => {
+    if (!file) return true;
+    return file.size <= 10 * 1024 * 1024;
+  };
 
   const loadProducts   = () => fetch(`${API}/api/products`).then(r => r.json()).then(setProducts).catch(console.error);
   const loadCategories = () => fetch(`${API}/api/categories`).then(r => r.json()).then(setCategories).catch(console.error);
@@ -20,19 +39,58 @@ export default function ProductManager() {
     e.preventDefault();
     setErrors([]);
 
+    const cleanedName = sanitizeSingleLineInput(form.name, 255).trim();
+    const cleanedDescription = sanitizeDescriptionInput(form.description, 1000).trim();
+    const normalizedPrice = normalizeMoneyInput(form.price);
+    const selectedImage = fileRef.current?.files[0];
+
+    if (!form.catid) {
+      setErrors(['Category is required']);
+      return;
+    }
+    if (!cleanedName) {
+      setErrors(['Product name is required']);
+      return;
+    }
+    if (normalizedPrice === null || normalizedPrice === '') {
+      setErrors(['Price must be a valid amount with up to 2 decimal places']);
+      return;
+    }
+    if (!editId && !selectedImage) {
+      setErrors(['Image is required for new products']);
+      return;
+    }
+    if (selectedImage && !isAllowedImageType(selectedImage)) {
+      setErrors(['Image type must be jpg, jpeg, png, or gif']);
+      return;
+    }
+    if (selectedImage && !isAllowedImageSize(selectedImage)) {
+      setErrors(['Image must be 10MB or smaller']);
+      return;
+    }
+    if (!csrfToken) {
+      setErrors([csrfError || 'CSRF token unavailable. Please refresh and try again.']);
+      return;
+    }
+
     const fd = new FormData();
     fd.append('catid',       form.catid);
-    fd.append('name',        form.name);
-    fd.append('price',       form.price);
-    fd.append('description', form.description);
-    if (fileRef.current?.files[0]) {
-      fd.append('image', fileRef.current.files[0]);
+    fd.append('name',        cleanedName);
+    fd.append('price',       normalizedPrice);
+    fd.append('description', cleanedDescription);
+    fd.append('csrf_token',  csrfToken);
+    if (selectedImage) {
+      fd.append('image', selectedImage);
     }
 
     const method = editId ? 'PUT' : 'POST';
     const url    = editId ? `${API}/api/products/${editId}` : `${API}/api/products`;
 
-    const res  = await fetch(url, { method, body: fd });
+    const res  = await fetch(url, {
+      method,
+      headers: { 'X-CSRF-Token': csrfToken },
+      body: fd,
+    });
     const data = await res.json();
     if (!res.ok) {
       setErrors(data.errors ? data.errors : [data.error]);
@@ -53,7 +111,14 @@ export default function ProductManager() {
 
   const handleDelete = async (pid) => {
     if (!confirm('Delete this product?')) return;
-    const res  = await fetch(`${API}/api/products/${pid}`, { method: 'DELETE' });
+    if (!csrfToken) {
+      setErrors([csrfError || 'CSRF token unavailable. Please refresh and try again.']);
+      return;
+    }
+    const res  = await fetch(`${API}/api/products/${pid}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': csrfToken },
+    });
     const data = await res.json();
     if (!res.ok) { setErrors([data.error || 'Delete failed']); return; }
     loadProducts();
@@ -76,7 +141,10 @@ export default function ProductManager() {
         </ul>
       )}
 
+      {csrfError && <p style={{ color: 'red', marginBottom: '0.5rem' }}>{csrfError}</p>}
+
       <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem', display: 'grid', gap: '0.6rem', maxWidth: '480px' }}>
+        <input type="hidden" name="csrf_token" value={csrfToken} readOnly />
         {/* Category dropdown */}
         <label>
           Category:&nbsp;
@@ -98,8 +166,9 @@ export default function ProductManager() {
           <input
             type="text"
             value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
+            onChange={e => setForm({ ...form, name: sanitizeSingleLineInput(e.target.value, 255) })}
             maxLength={255}
+            pattern=".*\S.*"
             required
             style={{ padding: '0.3rem', width: '100%' }}
           />
@@ -110,9 +179,15 @@ export default function ProductManager() {
           <input
             type="number"
             value={form.price}
-            onChange={e => setForm({ ...form, price: e.target.value })}
+            onChange={e => {
+              const next = normalizeMoneyInput(e.target.value);
+              if (next !== null) {
+                setForm({ ...form, price: next });
+              }
+            }}
             min="0"
             step="0.01"
+            inputMode="decimal"
             required
             style={{ padding: '0.3rem' }}
           />
@@ -122,7 +197,7 @@ export default function ProductManager() {
           Description:
           <textarea
             value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })}
+            onChange={e => setForm({ ...form, description: sanitizeDescriptionInput(e.target.value, 1000) })}
             maxLength={1000}
             rows={3}
             style={{ display: 'block', width: '100%', padding: '0.3rem' }}
@@ -136,6 +211,21 @@ export default function ProductManager() {
             accept="image/jpeg,image/png,image/gif"
             ref={fileRef}
             required={!editId}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (!isAllowedImageType(file)) {
+                setErrors(['Image type must be jpg, jpeg, png, or gif']);
+                e.target.value = '';
+                return;
+              }
+              if (!isAllowedImageSize(file)) {
+                setErrors(['Image must be 10MB or smaller']);
+                e.target.value = '';
+                return;
+              }
+              setErrors([]);
+            }}
             style={{ display: 'block', marginTop: '0.2rem' }}
           />
         </label>
@@ -167,13 +257,13 @@ export default function ProductManager() {
           {products.map(p => (
             <tr key={p.pid}>
               <td style={td}>{p.pid}</td>
-              <td style={td}>{p.name}</td>
+              <td style={td}>{sanitizeDisplayText(p.name, 255)}</td>
               <td style={td}>{p.catid}</td>
               <td style={td}>${Number(p.price).toLocaleString()}</td>
               <td style={td}>
-                {p.image && (
+                {sanitizeImageIdForPath(p.image) && (
                   <img
-                    src={`${API}/uploads/${p.image}_thumb.jpg`}
+                    src={`${API}/uploads/${encodeURIComponent(sanitizeImageIdForPath(p.image))}_thumb.jpg`}
                     alt=""
                     style={{ width: 60, height: 40, objectFit: 'cover' }}
                   />

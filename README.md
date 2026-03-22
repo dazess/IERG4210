@@ -59,6 +59,33 @@ This opens two windows:
 Backend | http://localhost:3001 
 Frontend | http://localhost:5173 
 
+## Authentication
+
+The app now includes registration/login and role-based admin access.
+
+- `GET /api/auth/me`: returns current authentication state
+- `POST /api/auth/login`: login with email/password
+- `POST /api/auth/register`: register a normal user
+- `POST /api/auth/logout`: logout current user
+- `POST /api/auth/change-password`: verify current password, update hash, and force logout
+
+`/admin` is restricted to users with admin privilege.
+
+### Default seeded accounts
+
+If these users do not already exist, they are created automatically during DB init:
+
+- Admin: `admin@example.com` / `AdminPass!123`
+- Normal user: `user@example.com` / `UserPass!123`
+
+You can override these defaults using environment variables:
+
+- `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD`, `DEFAULT_ADMIN_NAME`
+- `DEFAULT_USER_EMAIL`, `DEFAULT_USER_PASSWORD`, `DEFAULT_USER_NAME`
+- Auth cookie name is `auth_token` with `HttpOnly`, `Secure`, and `SameSite=Strict`
+- Auth cookie is persistent for 2 days (expires in < 3 days)
+- `COOKIE_SECURE=0` can be used only for non-HTTPS local development
+
 ## Project Structure
 
 ```
