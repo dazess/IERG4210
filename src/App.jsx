@@ -17,6 +17,11 @@ export const AuthContext = createContext(null);
 
 const API = '';
 
+function getUserCartStorageKey(user) {
+  if (!user || !user.userid) return null;
+  return `cart:user:${user.userid}`;
+}
+
 function App() {
   const [auth, setAuth] = useState({ loading: true, authenticated: false, user: null });
 
@@ -41,14 +46,27 @@ function App() {
     loadMe();
   }, []);
 
-  const [cart, setCart] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cart');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
+  const [cart, setCart] = useState({});
+
+  useEffect(() => {
+    const cartKey = auth.authenticated ? getUserCartStorageKey(auth.user) : null;
+    if (!cartKey) {
+      setCart({});
+      return;
     }
-  });
+    try {
+      const saved = localStorage.getItem(cartKey);
+      setCart(saved ? JSON.parse(saved) : {});
+    } catch {
+      setCart({});
+    }
+  }, [auth.authenticated, auth.user?.userid]);
+
+  useEffect(() => {
+    const cartKey = auth.authenticated ? getUserCartStorageKey(auth.user) : null;
+    if (!cartKey) return;
+    localStorage.setItem(cartKey, JSON.stringify(cart));
+  }, [cart, auth.authenticated, auth.user?.userid]);
 
   useEffect(() => {
     const entries = Object.values(cart);
@@ -94,9 +112,7 @@ function App() {
   function updateQty(pid, qty) {
     const next = clampQuantityInput(qty);
     setCart(prev => {
-      const updated = { ...prev, [pid]: { ...prev[pid], qty: next } };
-      localStorage.setItem('cart', JSON.stringify(updated));
-      return updated;
+      return { ...prev, [pid]: { ...prev[pid], qty: next } };
     });
   }
 
@@ -165,6 +181,7 @@ function App() {
         const data = await res.json().catch(() => ({}));
         return { ok: false, error: data.error || 'Logout failed' };
       }
+      setCart({});
       setAuth({ loading: false, authenticated: false, user: null });
       return { ok: true };
     } catch {

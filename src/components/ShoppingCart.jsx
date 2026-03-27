@@ -7,8 +7,6 @@ export default function ShoppingCart({ isOpen, onClose }) {
   const items = Object.values(cart);
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  localStorage.setItem('cart', JSON.stringify(cart));
-
   return (
     <div className="shopping-cart" style={{ right: isOpen ? '0' : '-400px' }}>
       <div className="cart-content">
