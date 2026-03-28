@@ -35,7 +35,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 cd ..
 ```
-Copy .env.example to .env and edit as needed
+Copy .env.example to .env and edit as needed (you can get your Flask secret key placeholder at https://randomkeygen.com/flask-secret-key)
 
 ### 3. Seeding the database 
 
