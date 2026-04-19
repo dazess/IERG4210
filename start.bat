@@ -1,7 +1,8 @@
 @echo off
 echo Starting services...
 
-start "Flask Backend" cmd /k "cd /d %~dp0server && call venv\Scripts\activate.bat && python app.py"
+set "BACKEND_CMD=cd /d %~dp0server && python app.py"
+start "Flask Backend" cmd /k "%BACKEND_CMD%"
 
 start "Vite Frontend" cmd /k "cd /d %~dp0 && npm run dev"
 

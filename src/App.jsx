@@ -6,6 +6,8 @@ import Admin from './components/Admin';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import ChangePasswordPage from './components/ChangePasswordPage';
+import CheckoutPage from './components/CheckoutPage';
+import CheckoutSuccessPage from './components/CheckoutSuccessPage';
 import Footer from './components/Footer';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
@@ -228,6 +230,14 @@ function App() {
           <Routes>
             <Route path="/"             element={<HomePage />} />
             <Route path="/product/:pid" element={<ProductPage />} />
+            <Route
+              path="/checkout"
+              element={auth.authenticated ? <CheckoutPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/checkout/success"
+              element={auth.authenticated ? <CheckoutSuccessPage /> : <Navigate to="/login" replace />}
+            />
             <Route
               path="/admin"
               element={auth.authenticated && auth.user?.isAdmin ? <Admin /> : <Navigate to="/login" replace />}

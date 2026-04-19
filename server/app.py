@@ -3,7 +3,10 @@ import hmac
 import secrets
 from datetime import timedelta
 from dotenv import load_dotenv
-load_dotenv()
+
+BASE_DIR = os.path.dirname(__file__)
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+load_dotenv(os.path.join(BASE_DIR, '..', '.env'))
 
 from flask import Flask, jsonify, send_from_directory, request, session
 from flask_cors import CORS
@@ -28,9 +31,13 @@ app.teardown_appcontext(close_db)
 from routes.categories import bp as categories_bp
 from routes.products import bp as products_bp
 from routes.auth import bp as auth_bp
+from routes.checkout import bp as checkout_bp
+from routes.orders import bp as orders_bp
 app.register_blueprint(categories_bp)
 app.register_blueprint(products_bp)
 app.register_blueprint(auth_bp)
+app.register_blueprint(checkout_bp)
+app.register_blueprint(orders_bp)
 
 DIST_DIR = os.path.join(os.path.dirname(__file__), '..', 'dist')
 
@@ -39,11 +46,11 @@ HTML_CSP = '; '.join([
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
-    "script-src 'self'",
+    "script-src 'self' https://js.stripe.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    "connect-src 'self' https://api.stripe.com https://r.stripe.com",
     "form-action 'self'",
 ])
 
@@ -84,6 +91,8 @@ def enforce_csrf_protection():
     if not request.path.startswith('/api/'):
         return None
     if request.path == '/api/csrf-token':
+        return None
+    if request.path == '/api/checkout/webhook':
         return None
 
     session_token = session.get('csrf_token')

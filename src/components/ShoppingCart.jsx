@@ -1,11 +1,21 @@
 import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../App';
 import { MAX_QTY, sanitizeDisplayText } from '../lib/validation';
 
 export default function ShoppingCart({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const { cart, updateQty, removeFromCart } = useContext(CartContext);
   const items = Object.values(cart);
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+  const handleCheckout = () => {
+    if (items.length === 0) {
+      return;
+    }
+    onClose(); // Close the cart drawer
+    navigate('/checkout');
+  };
 
   return (
     <div className="shopping-cart" style={{ right: isOpen ? '0' : '-400px' }}>
@@ -57,7 +67,13 @@ export default function ShoppingCart({ isOpen, onClose }) {
           <strong className="text-black">Total: ${Number(total).toLocaleString()}</strong>
           <br />
           <br />
-          <button className="checkout-button">Checkout</button>
+          <button 
+            className="checkout-button"
+            onClick={handleCheckout}
+            disabled={items.length === 0}
+          >
+            Checkout
+          </button>
         </div>
       </div>
     </div>

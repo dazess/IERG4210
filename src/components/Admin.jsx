@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CategoryManager from './admin/CategoryManager';
 import ProductManager from './admin/ProductManager';
+import OrderManager from './admin/OrderManager';
 
 export default function Admin() {
   const [tab, setTab] = useState('products');
@@ -23,10 +24,18 @@ export default function Admin() {
         >
           Categories
         </button>
+        <button
+          onClick={() => setTab('orders')}
+          style={{ fontWeight: tab === 'orders' ? 'bold' : 'normal',
+                   padding: '0.4rem 1rem', cursor: 'pointer' }}
+        >
+          Orders
+        </button>
       </div>
 
       {tab === 'products'   && <ProductManager />}
       {tab === 'categories' && <CategoryManager />}
+      {tab === 'orders'     && <OrderManager />}
     </main>
   );
 }

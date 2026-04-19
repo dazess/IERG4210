@@ -37,6 +37,35 @@ def init_db():
             is_admin     INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)),
             display_name TEXT    NOT NULL DEFAULT ''
         );
+
+        CREATE TABLE IF NOT EXISTS orders (
+            order_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id        INTEGER NOT NULL,
+            stripe_session_id TEXT UNIQUE,
+            order_digest   TEXT    NOT NULL,
+            total_amount   REAL    NOT NULL CHECK(total_amount >= 0),
+            currency       TEXT    NOT NULL DEFAULT 'USD',
+            status         TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'failed')),
+            salt           TEXT    NOT NULL,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(userid) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS order_items (
+            item_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id       INTEGER NOT NULL,
+            pid            INTEGER NOT NULL,
+            quantity       INTEGER NOT NULL CHECK(quantity > 0),
+            price_at_purchase REAL NOT NULL CHECK(price_at_purchase >= 0),
+            FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+            FOREIGN KEY (pid) REFERENCES products(pid) ON DELETE RESTRICT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_orders_stripe_session_id ON orders(stripe_session_id);
+        CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+        CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+        CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
     """)
 
     admin_email = os.environ.get('DEFAULT_ADMIN_EMAIL', 'admin@example.com')

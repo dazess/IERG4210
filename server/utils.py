@@ -1,4 +1,6 @@
 import re
+import hmac
+import hashlib
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
@@ -137,3 +139,55 @@ def save_images(pid, file_bytes, upload_folder):
     thumb.save(f'{upload_folder}/{pid}_thumb.jpg', format='JPEG', quality=70)
 
     return f'{pid}_full.jpg', f'{pid}_thumb.jpg'
+
+
+def generate_order_digest(currency, merchant_email, salt, order_items, total_amount, secret_key):
+    """
+    Generate HMAC-SHA256 digest for order integrity verification.
+    
+    Args:
+        currency: Payment currency (e.g., 'USD')
+        merchant_email: Merchant email address
+        salt: Random salt (hex string)
+        order_items: List of {pid, quantity, price_at_purchase}
+        total_amount: Total order amount
+        secret_key: Secret key for HMAC (use STRIPE_SECRET_KEY or similar)
+    
+    Returns:
+        Hex-encoded HMAC-SHA256 digest
+    """
+    # Build order string: currency|merchant_email|salt|pid1:qty1:price1|pid2:qty2:price2|...|total
+    items_str = '|'.join(
+        f"{item['pid']}:{item['quantity']}:{item['price_at_purchase']:.2f}"
+        for item in order_items
+    )
+    order_string = f"{currency}|{merchant_email}|{salt}|{items_str}|{total_amount:.2f}"
+    
+    # Generate HMAC-SHA256
+    digest = hmac.new(
+        secret_key.encode('utf-8'),
+        order_string.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return digest
+
+
+def validate_order_digest(stored_digest, currency, merchant_email, salt, order_items, total_amount, secret_key):
+    """
+    Validate order digest by regenerating and comparing with stored digest.
+    
+    Args:
+        stored_digest: Previously generated digest from database
+        currency: Payment currency (e.g., 'USD')
+        merchant_email: Merchant email address
+        salt: Random salt (hex string) from database
+        order_items: List of {pid, quantity, price_at_purchase}
+        total_amount: Total order amount
+        secret_key: Secret key for HMAC (use STRIPE_SECRET_KEY or similar)
+    
+    Returns:
+        True if digest is valid, False otherwise
+    """
+    regenerated = generate_order_digest(currency, merchant_email, salt, order_items, total_amount, secret_key)
+    return hmac.compare_digest(regenerated, stored_digest)
