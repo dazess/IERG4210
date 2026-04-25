@@ -60,6 +60,8 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
+      console.log('Session creation result:', data);
+      console.log('Stripe function check:', typeof window.Stripe);
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -72,10 +74,17 @@ export default function CheckoutPage() {
         return;
       }
 
+      // Check if Stripe is loaded
+      if (typeof window.Stripe !== 'function') {
+        setError('Stripe.js has not loaded. Please ensure you are not using an ad-blocker that might be preventing this script from loading and refresh the page.');
+        setLoading(false);
+        return;
+      }
+
       // Redirect to Stripe checkout
       const stripe = window.Stripe(STRIPE_PUBLIC_KEY);
       if (!stripe) {
-        setError('Failed to load Stripe');
+        setError('Failed to initialize Stripe');
         setLoading(false);
         return;
       }

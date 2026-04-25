@@ -48,10 +48,11 @@ HTML_CSP = '; '.join([
     "frame-ancestors 'none'",
     "script-src 'self' https://js.stripe.com",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://*.stripe.com",
     "font-src 'self' data:",
     "connect-src 'self' https://api.stripe.com https://r.stripe.com",
-    "form-action 'self'",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "form-action 'self' https://checkout.stripe.com",
 ])
 
 NON_HTML_CSP = '; '.join([

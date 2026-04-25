@@ -8,9 +8,10 @@ export default function CheckoutSuccessPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { auth } = useContext(AuthContext);
-  const { cart } = useContext(CartContext);
-  const [orderDetails, setOrderDetails] = useState(null);
+  useContext(CartContext);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState('pending');
+  const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState(5);
 
   const sessionId = searchParams.get('session_id');
@@ -28,9 +29,33 @@ export default function CheckoutSuccessPage() {
       localStorage.removeItem(cartKey);
     }
 
-    // In a real app, you might fetch order details here
-    // For now, just show success message
-    setLoading(false);
+    const verifySession = async () => {
+      if (!sessionId) {
+        setError('Missing checkout session id');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Unable to verify payment status');
+        } else {
+          setStatus(data.status || 'pending');
+        }
+      } catch (err) {
+        setError(err.message || 'Unable to verify payment status');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
   }, [auth, navigate]);
 
   // Auto-redirect after countdown
@@ -73,8 +98,13 @@ export default function CheckoutSuccessPage() {
         <p style={{ margin: '0.5rem 0', fontSize: '1.25rem' }}>
           Thank you for your purchase. Your order has been confirmed.
         </p>
+        {error && (
+          <p style={{ margin: '0.75rem 0', color: '#8a1f11', fontWeight: 600 }}>
+            {error}
+          </p>
+        )}
         <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #c3e6cb' }}>
-          <p style={{ margin: '0.5rem 0', fontWeight: 'bold' }}>Status: PAID</p>
+          <p style={{ margin: '0.5rem 0', fontWeight: 'bold' }}>Status: {String(status).toUpperCase()}</p>
           {sessionId && (
             <p style={{ margin: '0.5rem 0', fontSize: '0.9rem', opacity: 0.9 }}>
               Session ID: <code style={{ wordBreak: 'break-all' }}>{sessionId}</code>

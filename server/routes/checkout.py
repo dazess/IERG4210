@@ -12,7 +12,19 @@ bp = Blueprint('checkout', __name__, url_prefix='/api/checkout')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 MERCHANT_EMAIL = os.environ.get('MERCHANT_EMAIL')
-API_BASE_URL = os.environ.get('API_BASE_URL', 'http://localhost:5173')
+API_BASE_URL = os.environ.get('API_BASE_URL') or 'https://s77.ierg4210.iecuhk.cc'
+
+
+def _stripe_field(obj, key, default=None):
+    """Safely access fields from Stripe SDK objects or plain dicts."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        return obj[key]
+    except Exception:
+        return getattr(obj, key, default)
 
 
 def auth_required(f):
@@ -106,6 +118,9 @@ def create_checkout_session():
                 'quantity': quantity,
             })
         
+        # Sort order_items by pid to ensure consistent digest generation
+        order_items.sort(key=lambda x: x['pid'])
+        
         # Generate salt and digest for order integrity
         salt = secrets.token_hex(16)
         order_digest = generate_order_digest(
@@ -180,6 +195,7 @@ def webhook():
     
     Validates webhook signature, checks order digest, marks order as paid.
     """
+    current_app.logger.info("Webhook received")
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('stripe-signature')
     
@@ -187,6 +203,7 @@ def webhook():
         event = stripe.Webhook.construct_event(
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
+        current_app.logger.info(f"Webhook event validated: {event['type']}")
     except ValueError as e:
         # Invalid payload
         current_app.logger.warning(f'Invalid payload: {str(e)}')
@@ -203,10 +220,10 @@ def webhook():
     try:
         session_obj = event['data']['object']
         stripe_session_id = session_obj['id']
-        metadata = session_obj.get('metadata', {})
+        metadata = _stripe_field(session_obj, 'metadata', {}) or {}
         
-        order_id = metadata.get('order_id')
-        order_digest = metadata.get('order_digest')
+        order_id = _stripe_field(metadata, 'order_id')
+        order_digest = _stripe_field(metadata, 'order_digest')
         
         if not order_id or not order_digest:
             current_app.logger.error(f'Missing metadata in session {stripe_session_id}')
@@ -235,7 +252,7 @@ def webhook():
         
         # Fetch order items
         order_items_rows = db.execute(
-            'SELECT pid, quantity, price_at_purchase FROM order_items WHERE order_id = ?',
+            'SELECT pid, quantity, price_at_purchase FROM order_items WHERE order_id = ? ORDER BY pid',
             (order_id,)
         ).fetchall()
         
@@ -284,4 +301,68 @@ def webhook():
     
     except Exception as e:
         current_app.logger.error(f'Error processing webhook: {str(e)}')
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@bp.route('/verify-session', methods=['GET'])
+@auth_required
+def verify_session():
+    """
+    Verify Stripe checkout session on return page and mark order as paid.
+
+    This is a fallback path when webhooks are delayed or misconfigured.
+    """
+    try:
+        if not stripe.api_key:
+            return jsonify({'error': 'Server payment configuration missing STRIPE_SECRET_KEY'}), 500
+
+        session_id = (request.args.get('session_id') or '').strip()
+        if not session_id:
+            return jsonify({'error': 'Missing session_id'}), 400
+
+        stripe_session = stripe.checkout.Session.retrieve(session_id)
+        payment_status = _stripe_field(stripe_session, 'payment_status')
+        checkout_status = _stripe_field(stripe_session, 'status')
+
+        db = get_db()
+        user_id = session.get('user_id')
+
+        order = db.execute(
+            'SELECT order_id, status FROM orders WHERE stripe_session_id = ? AND user_id = ?',
+            (session_id, user_id)
+        ).fetchone()
+
+        if not order:
+            return jsonify({'error': 'Order not found for this session'}), 404
+
+        if payment_status == 'paid' and checkout_status == 'complete':
+            if order['status'] != 'paid':
+                db.execute(
+                    'UPDATE orders SET status = ?, updated_at = ? WHERE order_id = ?',
+                    ('paid', datetime.now(), order['order_id'])
+                )
+                db.commit()
+                current_app.logger.info(
+                    f'Order {order["order_id"]} marked as paid via verify-session for Stripe session {session_id}'
+                )
+
+            return jsonify({
+                'success': True,
+                'order_id': order['order_id'],
+                'status': 'paid'
+            }), 200
+
+        return jsonify({
+            'success': True,
+            'order_id': order['order_id'],
+            'status': order['status'],
+            'stripe_payment_status': payment_status,
+            'stripe_checkout_status': checkout_status
+        }), 200
+
+    except stripe.error.StripeError as e:
+        current_app.logger.error(f'Stripe verify-session error: {str(e)}')
+        return jsonify({'error': 'Failed to verify Stripe session'}), 400
+    except Exception as e:
+        current_app.logger.error(f'Unexpected verify-session error: {str(e)}')
         return jsonify({'error': 'Internal server error'}), 500
