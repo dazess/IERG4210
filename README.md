@@ -6,7 +6,7 @@
 - **Database:** SQLite
 
 ---
-
+AI assistance is used.
 ## For assignment submission
 
 - DB file and gunicorn config in /server
