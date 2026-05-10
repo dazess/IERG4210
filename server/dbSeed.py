@@ -8,9 +8,11 @@ db.execute('PRAGMA foreign_keys=ON')
 
 try:
     with db:
+        db.execute('DELETE FROM order_items')
+        db.execute('DELETE FROM orders')
         db.execute('DELETE FROM products')
         db.execute('DELETE FROM categories')
-        db.execute('DELETE FROM sqlite_sequence WHERE name IN (?, ?)', ('products', 'categories'))
+        db.execute('DELETE FROM sqlite_sequence WHERE name IN (?, ?, ?, ?)', ('orders', 'order_items', 'products', 'categories'))
 
         cats = {}
         for name in ('Sports Car', 'Muscle Car', 'Motorcycle'):
