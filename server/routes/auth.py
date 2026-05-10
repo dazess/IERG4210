@@ -31,7 +31,7 @@ def _validate_password(password):
     return True, ''
 
 
-def _set_authenticated_session(user_row):
+def _set_authenticated_session(user_row, req):
     # Rotate and rebuild session payload after authentication.
     session.clear()
     session.permanent = True
@@ -39,8 +39,14 @@ def _set_authenticated_session(user_row):
     session['email'] = str(user_row['email'])
     session['display_name'] = str(user_row['display_name'])
     session['is_admin'] = int(user_row['is_admin'])
-    session['session_nonce'] = secrets.token_urlsafe(32)
+    nonce = secrets.token_urlsafe(32)
+    session['session_nonce'] = nonce
     session['csrf_token'] = secrets.token_urlsafe(32)
+    ip_addr = req.remote_addr or 'unknown'
+    db = get_db()
+    db.execute('INSERT INTO active_sessions (session_id, user_id, ip_address) VALUES (?, ?, ?)',
+               (nonce, user_row['userid'], ip_addr))
+    db.commit()
 
 
 @bp.route('/me', methods=['GET'])
@@ -69,12 +75,17 @@ def login():
     if not user or not check_password_hash(user['password'], password):
         return jsonify({'error': 'Either email or password is incorrect'}), 401
 
-    _set_authenticated_session(user)
+    _set_authenticated_session(user, request)
     return jsonify({'success': True, 'user': get_session_user()})
 
 
 @bp.route('/logout', methods=['POST'])
 def logout():
+    session_token = session.get('session_nonce')
+    if session_token:
+        db = get_db()
+        db.execute('DELETE FROM active_sessions WHERE session_id = ?', (session_token,))
+        db.commit()
     session.clear()
     # Keep CSRF usable for guest forms after logout.
     session['csrf_token'] = secrets.token_urlsafe(32)
@@ -159,8 +170,31 @@ def register():
         ).fetchone()
 
         # Auto-login after successful registration with a fresh auth session.
-        _set_authenticated_session(user)
+        _set_authenticated_session(user, request)
 
         return jsonify({'success': True, 'user': get_session_user()}), 201
     except IntegrityError:
         return jsonify({'error': 'Email is already registered'}), 409
+
+
+from auth_utils import admin_required
+
+@bp.route('/sessions', methods=['GET'])
+@admin_required
+def get_all_sessions():
+    db = get_db()
+    rows = db.execute('''
+        SELECT a.session_id, a.user_id, a.ip_address, a.created_at, u.email 
+        FROM active_sessions a
+        JOIN users u ON a.user_id = u.userid
+        ORDER BY a.created_at DESC
+    ''').fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@bp.route('/sessions/<session_id>', methods=['DELETE'])
+@admin_required
+def revoke_session(session_id):
+    db = get_db()
+    db.execute('DELETE FROM active_sessions WHERE session_id = ?', (session_id,))
+    db.commit()
+    return jsonify({'success': True})

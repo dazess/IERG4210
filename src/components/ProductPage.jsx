@@ -12,7 +12,8 @@ import {
 const API = '';
 
 export default function ProductPage() {
-  const { pid } = useParams();
+  const { productIdName } = useParams();
+  const pid = productIdName ? productIdName.split('-')[0] : null;
   const { addToCart } = useContext(CartContext);
   const [product, setProduct] = useState(null);
   const [error, setError]     = useState(null);
@@ -48,7 +49,7 @@ export default function ProductPage() {
           <span className="separator">/</span>
         </div>
         <div className="breadcrumb-item">
-          <Link to={`/?catid=${product.catid}`}>{safeCategoryName}</Link>
+          <Link to={`/${product.catid}-${safeCategoryName.replace(/\s+/g, '-')}`}>{safeCategoryName}</Link>
           <span className="separator">/</span>
         </div>
         <div className="breadcrumb-item">

@@ -10,10 +10,12 @@ load_dotenv(os.path.join(BASE_DIR, '..', '.env'))
 
 from flask import Flask, jsonify, send_from_directory, request, session
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 from database import init_db, close_db
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.debug = False  # Never expose tracebacks to users; dev mode uses app.run() debug flag
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
@@ -51,7 +53,7 @@ HTML_CSP = '; '.join([
     "img-src 'self' data: blob: https://*.stripe.com",
     "font-src 'self' data:",
     "connect-src 'self' https://api.stripe.com https://r.stripe.com",
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.facebook.com https://web.facebook.com",
     "form-action 'self' https://checkout.stripe.com",
 ])
 

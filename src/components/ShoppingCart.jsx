@@ -35,12 +35,11 @@ export default function ShoppingCart({ isOpen, onClose }) {
                     <button
                       className="qty-btn"
                       onClick={() => updateQty(item.pid, item.qty - 1)}
-                      disabled={item.qty <= 1}
                     >−</button>
                     <input
                       type="number"
                       className="qty-input"
-                      min="1"
+                      min="0"
                       max={MAX_QTY}
                       inputMode="numeric"
                       value={item.qty}

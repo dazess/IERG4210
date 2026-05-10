@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { CartContext } from '../App';
 import {
@@ -12,8 +12,9 @@ import {
 const API = '';
 
 export default function HomePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const catid = searchParams.get('catid');
+  const { categoryIdName } = useParams();
+  const navigate = useNavigate();
+  const catid = categoryIdName ? categoryIdName.split('-')[0] : null;
 
   const { addToCart } = useContext(CartContext);
   const [categories, setCategories] = useState([]);
@@ -51,12 +52,12 @@ export default function HomePage() {
       <div className="red-separator"></div>
 
       {/* Category nav */}
-      <button className="all-button" onClick={() => setSearchParams({})}>All</button>
+      <button className="all-button" onClick={() => navigate('/')}>All</button>
       {categories.map(cat => (
         <button
           key={cat.catid}
           className="sports-button"
-          onClick={() => setSearchParams({ catid: cat.catid })}
+          onClick={() => navigate(`/${cat.catid}-${cat.name.replace(/\s+/g, '-')}`)}
         >
           {sanitizeDisplayText(cat.name, 255)}
         </button>
@@ -70,15 +71,18 @@ export default function HomePage() {
 
       {loading && <p>Loading...</p>}
 
-      <div className="flex flex-wrap justify-center gap-4 max-w-6xl mx-auto p-4 product-grid">
+      <div className="flex flex-wrap justify-start gap-4 max-w-6xl mx-auto p-4 product-grid">
         {products.map(product => {
           const safeImageId = sanitizeImageIdForPath(product.image);
           const safeName = sanitizeDisplayText(product.name, 255);
+          const cat = activeCategory || categories.find(c => c.catid === product.catid);
+          const catSlug = cat ? `${cat.catid}-${cat.name.replace(/\s+/g, '-')}` : '0-Category';
+          const prodSlug = `${product.pid}-${product.name.replace(/\s+/g, '-')}`;
 
           return (
             <Card key={product.pid} className="!bg-red-950 product-card">
               <CardContent>
-                <Link to={`/product/${product.pid}`}>
+                <Link to={`/${catSlug}/${prodSlug}`}>
                   <img
                     src={safeImageId
                       ? `${API}/uploads/${encodeURIComponent(safeImageId)}_thumb.jpg`
@@ -112,6 +116,9 @@ export default function HomePage() {
             </Card>
           );
         })}
+      </div>
+      <div style={{ textAlign: "center", marginTop: "2rem" }}>
+        <iframe src="https://www.facebook.com/plugins/share_button.php?href=https%3A%2F%2Fgoogle.com%2F&amp;layout=button_count&amp;size=small" width="106" height="28" style={{border: "none", overflow: "hidden"}} scrolling="no" frameBorder="0" allowFullScreen={true} allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, session, current_app
 import stripe
 from database import get_db
+from auth_utils import get_session_user
 from utils import generate_order_digest, validate_order_digest
 
 bp = Blueprint('checkout', __name__, url_prefix='/api/checkout')
@@ -30,7 +31,10 @@ def _stripe_field(obj, key, default=None):
 def auth_required(f):
     """Decorator to require authentication"""
     def wrapper(*args, **kwargs):
-        user_id = session.get('user_id')
+        user = get_session_user()
+        if not user:
+            return jsonify({'error': 'Not authenticated'}), 401
+        user_id = user['userid']
         if not user_id:
             return jsonify({'error': 'Not authenticated'}), 401
         return f(*args, **kwargs)
@@ -64,7 +68,10 @@ def create_checkout_session():
             return jsonify({'error': 'Items must be a non-empty array'}), 400
         
         db = get_db()
-        user_id = session.get('user_id')
+        user = get_session_user()
+        if not user:
+            return jsonify({'error': 'Not authenticated'}), 401
+        user_id = user['userid']
         
         # Fetch user email
         user = db.execute('SELECT email FROM users WHERE userid = ?', (user_id,)).fetchone()
@@ -325,7 +332,10 @@ def verify_session():
         checkout_status = _stripe_field(stripe_session, 'status')
 
         db = get_db()
-        user_id = session.get('user_id')
+        user = get_session_user()
+        if not user:
+            return jsonify({'error': 'Not authenticated'}), 401
+        user_id = user['userid']
 
         order = db.execute(
             'SELECT order_id, status FROM orders WHERE stripe_session_id = ? AND user_id = ?',

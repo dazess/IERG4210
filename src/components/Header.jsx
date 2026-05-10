@@ -40,6 +40,11 @@ export default function Header() {
             </button>
           )}
           {auth.authenticated && (
+            <button className="admin-button" onClick={() => navigate('/orders')}>
+              My Orders
+            </button>
+          )}
+          {auth.authenticated && (
             <button className="admin-button" onClick={() => navigate('/account')}>
               Account
             </button>

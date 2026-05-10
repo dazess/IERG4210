@@ -9,6 +9,7 @@ import ChangePasswordPage from './components/ChangePasswordPage';
 import CheckoutPage from './components/CheckoutPage';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
 import Footer from './components/Footer';
+import UserOrders from './components/UserOrders';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
 import '../styles/main.css';
@@ -112,9 +113,14 @@ function App() {
   }
 
   function updateQty(pid, qty) {
-    const next = clampQuantityInput(qty);
+    const next = Number.parseInt(String(qty ?? ''), 10);
+    if (!Number.isFinite(next) || next <= 0) {
+      removeFromCart(pid);
+      return;
+    }
+    const clamped = clampQuantityInput(next);
     setCart(prev => {
-      return { ...prev, [pid]: { ...prev[pid], qty: next } };
+      return { ...prev, [pid]: { ...prev[pid], qty: clamped } };
     });
   }
 
@@ -229,7 +235,8 @@ function App() {
           <Header />
           <Routes>
             <Route path="/"             element={<HomePage />} />
-            <Route path="/product/:pid" element={<ProductPage />} />
+            <Route path="/:categoryIdName" element={<HomePage />} />
+            <Route path="/:categoryIdName/:productIdName" element={<ProductPage />} />
             <Route
               path="/checkout"
               element={auth.authenticated ? <CheckoutPage /> : <Navigate to="/login" replace />}
@@ -244,6 +251,10 @@ function App() {
             />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/orders"
+              element={auth.authenticated ? <UserOrders /> : <Navigate to="/login" replace />}
+            />
             <Route
               path="/account"
               element={auth.authenticated ? <ChangePasswordPage /> : <Navigate to="/login" replace />}

@@ -1,36 +1,8 @@
 from flask import Blueprint, jsonify, session, request
 from database import get_db
+from auth_utils import get_session_user, auth_required, admin_required
 
 bp = Blueprint('orders', __name__, url_prefix='/api/orders')
-
-
-def auth_required(f):
-    """Decorator to require authentication"""
-    def wrapper(*args, **kwargs):
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'Not authenticated'}), 401
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
-
-
-def admin_required(f):
-    """Decorator to require admin access"""
-    def wrapper(*args, **kwargs):
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'Not authenticated'}), 401
-        
-        db = get_db()
-        user = db.execute('SELECT is_admin FROM users WHERE userid = ?', (user_id,)).fetchone()
-        
-        if not user or not user['is_admin']:
-            return jsonify({'error': 'Admin access required'}), 403
-        
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
 
 
 @bp.route('/recent', methods=['GET'])
